@@ -4265,6 +4265,7 @@ void process_commands()
 						starttime=millis();
 						//Rapduch
 						#ifdef SIGMA_TOUCH_SCREEN
+						processing = false;
 						genie.WriteObject(GENIE_OBJ_FORM,FORM_PRINTING,0);
 						//char buffer[13];
 						if (String(card.longFilename).length()>12){
