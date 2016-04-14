@@ -9,7 +9,7 @@
 
 #ifndef LCD_HANDLER_H_
 #define LCD_HANDLER_H_
-
+#include <SD.h>
 //Rapduch
 #include "genieArduino.h"
 #include "Touch_Screen_Definitions.h"
@@ -33,6 +33,7 @@ bool flag_resume = false;
 bool flag_full_calib = false;
 bool flag_bed_calib_done = false;
 bool screen_sdcard = false;
+
 int  print_setting_tool = 2;
 float offset_x_calib = 0;
 float offset_y_calib = 0;
@@ -389,30 +390,26 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 				{
 					if(card.cardOK)
 					{
-						dobloking = true;
-						setTargetBed(0);
-						setTargetHotend0(0);
-						setTargetHotend1(0);
-						log_prints++;
-						Config_StoreSettings();
-						//enquecommand_P(PSTR("T0"));
-						st_synchronize();
-						if (!card.filenameIsDir){ //If the filename is a gcode we start printing
-							char cmd[30];
-							char* c;
-							card.getfilename(filepointer);
-							sprintf_P(cmd, PSTR("M23 %s"), card.filename);
-							for(c = &cmd[4]; *c; c++)
-							{
-								*c = tolower(*c);
+						File myFile;
+						myFile = SD.open(card.longFilename);
+						
+						if(myFile){
+							Serial.println(card.longFilename);
+							while (myFile.available()) {
+								Serial.write(myFile.read());  //THIS LINE RIGHT HERE
 							}
-							enquecommand(cmd);
+							myFile.close();
 							
-							is_on_printing_screen=true;//We are entering printing screen
-							enquecommand_P(PSTR("M24")); // It also sends you to PRINTING screen
-							
-							screen_status="Ready...";//Write the selected SD file to all strings
 						}
+						 else {
+							 // if the file didn't open, print an error:
+							 Serial.println("error opening c.txt");
+						 }
+						
+						
+						
+						
+						
 					}
 				}
 				else if ((Event.reportObject.index == BUTTON_SD_SELECTED1 ||  Event.reportObject.index == STRING_NAME_FILE) && surf_file_menu)
@@ -2961,7 +2958,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 								}
 								
 								card.getfilename(vecto);
-								
+								//card.file.open()
 								if (String(card.longFilename).length() > count){
 									for (int i = 0; i<count ; i++)
 									{
