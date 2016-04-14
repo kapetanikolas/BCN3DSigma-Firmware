@@ -1,3 +1,4 @@
+
 /*
 * LCD_Handler.h
 * A place to hold all interactions between LCD and printer. It is called from Marlin_main.cpp when using genie.DoEvents()
@@ -9,7 +10,7 @@
 
 #ifndef LCD_HANDLER_H_
 #define LCD_HANDLER_H_
-#include <SD.h>
+#include <stdio.h>
 //Rapduch
 #include "genieArduino.h"
 #include "Touch_Screen_Definitions.h"
@@ -390,21 +391,6 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 				{
 					if(card.cardOK)
 					{
-						File myFile;
-						myFile = SD.open(card.longFilename);
-						
-						if(myFile){
-							Serial.println(card.longFilename);
-							while (myFile.available()) {
-								Serial.write(myFile.read());  //THIS LINE RIGHT HERE
-							}
-							myFile.close();
-							
-						}
-						 else {
-							 // if the file didn't open, print an error:
-							 Serial.println("error opening c.txt");
-						 }
 						
 						
 						
@@ -453,7 +439,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 								*c = tolower(*c);
 							}
 							enquecommand(cmd);
-							
+							Serial.println(cmd);
 							is_on_printing_screen=true;//We are entering printing screen
 							enquecommand_P(PSTR("M24")); // It also sends you to PRINTING screen
 							
