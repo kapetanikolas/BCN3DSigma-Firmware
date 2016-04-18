@@ -339,6 +339,8 @@ extern int log_max_bed;
 extern int dateresetday;
 extern int dateresetmonth;
 extern int dateresetyear;
+extern int jint;
+extern int vecto;
 extern bool screen_change_nozz1up;
 extern bool screen_change_nozz2up;
 extern bool screen_change_bedup;
