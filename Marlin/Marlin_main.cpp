@@ -327,7 +327,6 @@ bool processing = false;
 bool heatting = false;
 bool back_home = false;
 char namefilegcode[64]="";
-float timeduration = 0.0;
 int dateresetday;
 int dateresetmonth;
 int dateresetyear;
@@ -654,9 +653,6 @@ void servo_init()
 
 void setup()
 {
-	
-	TCCR4B = TCCR4B & B11111000 | B00000001;
-	TCCR5B = TCCR5B & B11111000 | B00000001;
 	int led = 0;
 	static uint32_t waitPeriod = millis(); //Processing back home
 	setup_killpin();
@@ -1178,18 +1174,7 @@ void touchscreen_update() //Updates the Serial Communications with the screen
 				int tHotend=int(degHotend(0));
 				int tHotend1=int(degHotend(1));
 				int tBed=int(degBed() + 0.5);
-				int days, hours, minutes;
-				long int  size, pos;
-				size = card.getFileSize();
-				pos = card.getSdPosition();
-				double timedur;
-				timedur = ((double)size-(double)pos)/(double)size;
-				//timedur = (float)(((card.getFileSize()-card.getSdPosition())/card.getFileSize())*1288*feedmultiply/100);
-				timedur = timedur*(double)timeduration*100.0/(double)feedmultiply;
-			
-				days = ((int)timedur/(24*60));
-				hours = ((int)timedur%24);
-				minutes = ((int)timedur%60);
+				
 				genie.WriteStr(STRINGS_PRINTING_GCODE,namefilegcode);
 				//Rapduch
 				//Edit for final TouchScreen
@@ -1206,16 +1191,13 @@ void touchscreen_update() //Updates the Serial Communications with the screen
 				//Serial.println(buffer);
 				genie.WriteStr(STRING_PRINTING_BED,buffer7);
 				
-				sprintf(buffer7, "% 3d %% %d d %d h %d m",card.percentDone(), days, hours, minutes);
+				sprintf(buffer7, "% 3d %%",card.percentDone());
 				//Serial.println(buffer);
 				genie.WriteStr(STRING_PRINTING_PERCENT,buffer7);
 				
 				sprintf(buffer7, "% 3d %%",feedmultiply);
 				//Serial.println(buffer);
 				genie.WriteStr(STRINGS_PRINTING_FEED,buffer7);
-				
-				
-				
 				/*
 				char buffer3[13];
 				if (String(card.longFilename).length()>12){
@@ -2195,7 +2177,6 @@ void process_commands()
 	unsigned long codenum; //throw away variable
 	char *starpos = NULL;
 	#ifdef ENABLE_AUTO_BED_LEVELING
-	float days=0.0, hours=0.0, minutes=0.0; 
 	float x_tmp, y_tmp, z_tmp, real_z;
 	#endif
 
@@ -4959,21 +4940,9 @@ void process_commands()
 					previous_millis_cmd = millis();
 					#endif
 					break;
-					case 78:  //Time duration
-					
-					if (code_seen('D')){
-						days = code_value();
-					}
-					if (code_seen('H')){
-						hours = code_value();
-					}
-					if (code_seen('M')){
-						minutes = code_value();
-					}
-					timeduration = days*24.0*60.0 + hours*60.0 + minutes;
-					
+					case 104:
 					break;
-					case 79://Filament cost
+					case 105:
 					break;
 						
 					#if defined(FAN_PIN) && FAN_PIN > -1
