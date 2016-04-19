@@ -293,8 +293,6 @@ bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
 int feedmultiply=100; //100->1 200->2
 int saved_feedmultiply;
 int extrudemultiply=100; //100->1 200->2
-int vecto = 0;
-int jint=0;
 int extruder_multiply[EXTRUDERS] = {100
 	#if EXTRUDERS > 1
 	, 100
@@ -897,108 +895,6 @@ int getBuflen ()
 
 #ifdef SIGMA_TOUCH_SCREEN
 //Rapduch
-void sdinit_processing()
-{
-	static uint32_t waitPeriod = millis();
-	uint16_t fileCnt = card.getnrfilenames();
-	
-	if (millis() >= waitPeriod){
-		card.sdprinting = false;
-		card.closefile();
-		if(jint == 2){
-			sdinitbool = false;
-		}
-		else{
-			int line = 23;
-			int count = 63;
-			char buffer[count+3];
-			int x = 0;
-			memset( buffer, '\0', sizeof(char)*count );
-			vecto = filepointer;
-			
-			if((jint + vecto) < 0){
-				vecto = fileCnt - 1;
-			}
-			else if((jint + vecto) > (fileCnt -1)){
-				vecto = 0;
-			}
-			else{
-				vecto += jint;
-			}
-			
-			card.getfilename(vecto);
-			//card.file.open()
-			if (String(card.longFilename).length() > count){
-				for (int i = 0; i<count ; i++)
-				{
-					if (card.longFilename[i] == '.') i = count +10; //go out of the for
-					else if(i == 0) buffer[i]=card.longFilename[x];
-					else if (i%line == 0){
-						buffer[i] = '\n';
-						i++;
-						buffer[i]=card.longFilename[x];
-					}
-					else {
-						buffer[i]=card.longFilename[x];
-					}
-					x++;
-					Serial.print(i);
-				}
-				buffer[count]='\0';
-				char* buffer2 = strcat(buffer,"...\0");
-				if(jint == -1){
-					genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
-				}
-				else if(jint == 0){
-					genie.WriteStr(STRING_NAME_FILE2,buffer2);//Printing form
-				}
-				else if(jint == 1){
-					genie.WriteStr(STRING_NAME_FILE3,buffer2);//Printing form
-				}
-			}
-			else {
-				for (int i = 0; i<String(card.longFilename).length(); i++)	{
-					if (card.longFilename[i] == '.') i = String(card.longFilename).length() +10; //go out of the for
-					else if(i == 0) buffer[i]=card.longFilename[x];
-					else if (i%line == 0){
-						buffer[i] = '\n';
-						i++;
-						buffer[i]=card.longFilename[x];
-					}
-					else {
-						buffer[i]=card.longFilename[x];
-					}
-					x++;
-					Serial.print(i);
-				}
-				//buffer[count]='\0';
-				if(jint == -1){
-					genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
-				}
-				else if(jint == 0){
-					genie.WriteStr(STRING_NAME_FILE2,buffer);//Printing form
-				}
-				else if(jint == 1){
-					genie.WriteStr(STRING_NAME_FILE3,buffer);//Printing form
-				}
-				
-				
-				//Is a file
-				//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
-			}
-			card.openFile(card.filename,true);
-			card.startFileprint();
-			Serial.println(buffer);
-			waitPeriod = 50 + millis();
-			jint++;
-		}
-	}
-
-	
-	
-	
-	
-}
 void touchscreen_update() //Updates the Serial Communications with the screen
 {
 	//static keyword specifies that the variable retains its state between calls to the function
@@ -1008,9 +904,7 @@ void touchscreen_update() //Updates the Serial Communications with the screen
 	static int count5s = 0;
 	int value = 5;
 	//if(card.sdprinting && is_on_printing_screen)
-	if(sdinitbool){
-		sdinit_processing();
-	}
+	
 	if(screen_sdcard && !card.cardOK){
 		
 		if (millis() >= waitPeriod){
@@ -2304,7 +2198,7 @@ void process_commands()
 	float days=0.0, hours=0.0, minutes=0.0; 
 	float x_tmp, y_tmp, z_tmp, real_z;
 	#endif
-	char buffer2[256]="";
+
 	if(code_seen('G'))
 	{
 		switch((int)code_value())
@@ -5076,28 +4970,7 @@ void process_commands()
 					if (code_seen('M')){
 						minutes = code_value();
 					}
-					sprintf(buffer2, "%d d %d h %d m",(int)days, (int)hours, (int)minutes);
 					timeduration = days*24.0*60.0 + hours*60.0 + minutes;
-					if(sdinitbool){
-						card.sdprinting = false;
-						card.closefile();
-						
-						
-						if(jint == 0){
-							genie.WriteStr(STRING_NAME_FILE_DUR,buffer2);//Printing form
-						}
-						else if(jint == 1){
-							genie.WriteStr(STRING_NAME_FILE2_DUR,buffer2);//Printing form
-						}
-						else if(jint == 2){
-							genie.WriteStr(STRING_NAME_FILE3_DUR,buffer2);//Printing form
-						}
-						if(jint == 2){
-							sdinitbool = false;
-						}
-					}
-					Serial.println(buffer2);
-					Serial.println(timeduration);
 					
 					break;
 					case 79://Filament cost
