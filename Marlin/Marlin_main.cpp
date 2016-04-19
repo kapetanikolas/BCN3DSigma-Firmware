@@ -4940,10 +4940,6 @@ void process_commands()
 					previous_millis_cmd = millis();
 					#endif
 					break;
-					case 104:
-					break;
-					case 105:
-					break;
 						
 					#if defined(FAN_PIN) && FAN_PIN > -1
 					case 106: //M106 Fan On

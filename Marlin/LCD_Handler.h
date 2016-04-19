@@ -34,6 +34,7 @@ bool flag_resume = false;
 bool flag_full_calib = false;
 bool flag_bed_calib_done = false;
 bool screen_sdcard = false;
+char comandline[99];
 
 int  print_setting_tool = 2;
 float offset_x_calib = 0;
@@ -44,7 +45,7 @@ int custom_insert_temp = 210;
 int custom_remove_temp = 210;
 int custom_print_temp = 210;
 int custom_bed_temp = 40;
-
+char *strchr_pointer1;
 
 
 int redo_source;
@@ -2902,6 +2903,8 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 			{
 				if (Event.reportObject.index == FORM_SDFILES)
 				{
+					
+					int days=0, minutes=0, hours=0;
 					surf_file_menu = false;
 					//wake_RELAY();
 					Serial.println("Form 2!");
@@ -2926,9 +2929,11 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							}else{
 							
 							for(jint = -1; jint <  2; jint++){
+								days=0, minutes=0, hours=0;
 								int line = 23;
 								int count = 63;
 								char buffer[count+3];
+								char buffer7[256];
 								int x = 0;
 								memset( buffer, '\0', sizeof(char)*count );
 								vecto = filepointer;
@@ -2945,6 +2950,71 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 								
 								card.getfilename(vecto);
 								//card.file.open()
+								///CODE READING MCODE 78 START
+								card.openFile(card.filename, true);
+								
+								char serial_char='\0';
+								//comandline="";
+								int posi = 0;
+								
+								while(serial_char != '\n' && posi < 50){
+									
+									
+									int16_t n=card.get();
+									serial_char = (char)n;
+									comandline[posi]=serial_char;
+									
+									
+									posi++;
+								}
+								
+								strchr_pointer1 = strchr(comandline, 'M');
+								if(strchr_pointer1 != NULL){
+									
+									if (78 ==(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL)){
+										strchr_pointer1 = strchr(comandline, 'D');
+										if(strchr_pointer1 != NULL){
+											days =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+										}
+										else{
+											Serial.println("NO DAYS");
+										}
+										strchr_pointer1 = strchr(comandline, 'H');
+										if(strchr_pointer1 != NULL){
+											hours =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+										}
+										else{
+											Serial.println("NO HOURS");
+										}
+										strchr_pointer1 = strchr(comandline, 'M');
+										if(strchr_pointer1 != NULL){
+											minutes =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+										}
+										else{
+											Serial.println("NO MINUTES");
+										}
+										
+									}
+									else{
+										Serial.println("NO COMMAND M78");
+									}
+									
+								}
+								else{
+									Serial.println("NO MCODE");
+								}
+								
+								Serial.println(days);
+								Serial.println(hours);
+								Serial.println(minutes);
+								card.closefile();
+								
+								sprintf(buffer7, "%d d %d h %d m", days, hours, minutes);
+								
+								//Serial.println(comandline);
+								///CODE READING MCODE 78 END
+								
+								
 								if (String(card.longFilename).length() > count){
 									for (int i = 0; i<count ; i++)
 									{
@@ -2991,19 +3061,25 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 									//buffer[count]='\0';
 									if(jint == -1){
 										genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
+										genie.WriteStr(STRING_NAME_FILE_DUR,buffer7);//Printing form
+										
 									}
 									else if(jint == 0){
 										genie.WriteStr(STRING_NAME_FILE2,buffer);//Printing form
+										genie.WriteStr(STRING_NAME_FILE2_DUR,buffer7);//Printing form
 									}
 									else if(jint == 1){
 										genie.WriteStr(STRING_NAME_FILE3,buffer);//Printing form
+										genie.WriteStr(STRING_NAME_FILE3_DUR,buffer7);//Printing form
 									}
+									
 									
 									
 									//Is a file
 									//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
 								}
 								Serial.println(buffer);
+								
 							}
 							
 						}

@@ -23,9 +23,12 @@
 	#define STRING_NAME_FILE				1
 	#define STRING_NAME_FILE2				4
 	#define STRING_NAME_FILE3				7
+	#define STRING_NAME_FILE_DUR			8
+	#define STRING_NAME_FILE2_DUR			12
+	#define STRING_NAME_FILE3_DUR			23
 	#define BUTTON_SD_SELECTED1				3
-	#define BUTTON_SD_SELECTED2				37	
-	#define BUTTON_SD_SELECTED3				38		
+	#define BUTTON_SD_SELECTED2				37
+	#define BUTTON_SD_SELECTED3				38
 	#define BUTTON_SD_SELECTED				15
 	#define BUTTON_SD_LEFT					14
 	#define BUTTON_SD_RIGHT					5	
