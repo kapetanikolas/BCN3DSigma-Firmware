@@ -328,7 +328,6 @@ float zprobe_zoffset;
 bool processing = false;
 bool heatting = false;
 bool back_home = false;
-int read_lines = 0;
 char namefilegcode[64]="";
 float timeduration = 0.0;
 int dateresetday;
@@ -908,10 +907,8 @@ void sdinit_processing()
 		card.closefile();
 		if(jint == 2){
 			sdinitbool = false;
-			surf_file_menu = true;
 		}
 		else{
-			read_lines = 0;
 			int line = 23;
 			int count = 63;
 			char buffer[count+3];
@@ -992,7 +989,7 @@ void sdinit_processing()
 			card.openFile(card.filename,true);
 			card.startFileprint();
 			Serial.println(buffer);
-			waitPeriod = 15 + millis();
+			waitPeriod = 50 + millis();
 			jint++;
 		}
 	}
@@ -2304,97 +2301,46 @@ void process_commands()
 	unsigned long codenum; //throw away variable
 	char *starpos = NULL;
 	#ifdef ENABLE_AUTO_BED_LEVELING
-	float days=0.0, hours=0.0, minutes=0.0;
+	float days=0.0, hours=0.0, minutes=0.0; 
 	float x_tmp, y_tmp, z_tmp, real_z;
 	#endif
 	char buffer2[256]="";
-	if(sdinitbool){
-		if(code_seen('M'))
+	if(code_seen('G'))
+	{
+		switch((int)code_value())
 		{
-			if(78 ==(int)code_value()){
-				
-				if (code_seen('D')){
-					days = code_value();
-				}
-				if (code_seen('H')){
-					hours = code_value();
-				}
-				if (code_seen('M')){
-					minutes = code_value();
-				}
-				sprintf(buffer2, "%d d %d h %d m",(int)days, (int)hours, (int)minutes);
-				timeduration = days*24.0*60.0 + hours*60.0 + minutes;
-				if(sdinitbool){
-					
-					card.sdprinting = false;
-					card.closefile();
-					
-					if(jint == 0){
-						genie.WriteStr(STRING_NAME_FILE_DUR,buffer2);//Printing form
-					}
-					else if(jint == 1){
-						genie.WriteStr(STRING_NAME_FILE2_DUR,buffer2);//Printing form
-					}
-					else if(jint == 2){
-						genie.WriteStr(STRING_NAME_FILE3_DUR,buffer2);//Printing form
-					}
-					if(jint == 2){
-						surf_file_menu = true;
-						sdinitbool = false;
+			case 0: // G0 -> G1
+			case 1: // G1
+			if(Stopped == false) {
+				get_coordinates(); // For X Y Z E F
+				#ifdef FWRETRACT
+				if(autoretract_enabled)
+				if( !(code_seen('X') || code_seen('Y') || code_seen('Z')) && code_seen('E')) {
+					float echange=destination[E_AXIS]-current_position[E_AXIS];
+					if((echange<-MIN_RETRACT && !retracted) || (echange>MIN_RETRACT && retracted)) { //move appears to be an attempt to retract or recover
+						current_position[E_AXIS] = destination[E_AXIS]; //hide the slicer-generated retract/recover from calculations
+						plan_set_e_position(current_position[E_AXIS]); //AND from the planner
+						retract(!retracted);
+						return;
 					}
 				}
-				Serial.println(buffer2);
-				Serial.println(timeduration);
-				
-				
-				
+				#endif //FWRETRACT
+				prepare_move();
+				//ClearToSend();
+				return;
 			}
-		}
-		read_lines++;
-		if(read_lines==1){
-			card.sdprinting = false;
-			card.closefile();
-		}
-		
-		
-	}
-	else{
-		if(code_seen('G'))
-		{
-			switch((int)code_value())
-			{
-				case 0: // G0 -> G1
-				case 1: // G1
-				if(Stopped == false) {
-					get_coordinates(); // For X Y Z E F
-					#ifdef FWRETRACT
-					if(autoretract_enabled)
-					if( !(code_seen('X') || code_seen('Y') || code_seen('Z')) && code_seen('E')) {
-						float echange=destination[E_AXIS]-current_position[E_AXIS];
-						if((echange<-MIN_RETRACT && !retracted) || (echange>MIN_RETRACT && retracted)) { //move appears to be an attempt to retract or recover
-							current_position[E_AXIS] = destination[E_AXIS]; //hide the slicer-generated retract/recover from calculations
-							plan_set_e_position(current_position[E_AXIS]); //AND from the planner
-							retract(!retracted);
-							return;
-						}
-					}
-					#endif //FWRETRACT
-					prepare_move();
-					//ClearToSend();
-					return;
-				}
-				break;
-				
-				#ifndef SCARA //disable arc support
-				case 2: // G2  - CW ARC
-				if(Stopped == false) {
-					get_arc_coordinates();
-					prepare_arc_move(true);
-					return;
-				}
-				break;
-				case 3: // G3  - CCW ARC
-				if(Stopped == false) {
+			break;
+			
+			#ifndef SCARA //disable arc support
+			case 2: // G2  - CW ARC
+			if(Stopped == false) {
+				get_arc_coordinates();
+				prepare_arc_move(true);
+				return;
+			}
+			break;
+			case 3: // G3  - CCW ARC
+			if(Stopped == false) {
 				get_arc_coordinates();
 				prepare_arc_move(false);
 				return;
@@ -5119,10 +5065,44 @@ void process_commands()
 					previous_millis_cmd = millis();
 					#endif
 					break;
+					case 78:  //Time duration
 					
+					if (code_seen('D')){
+						days = code_value();
+					}
+					if (code_seen('H')){
+						hours = code_value();
+					}
+					if (code_seen('M')){
+						minutes = code_value();
+					}
+					sprintf(buffer2, "%d d %d h %d m",(int)days, (int)hours, (int)minutes);
+					timeduration = days*24.0*60.0 + hours*60.0 + minutes;
+					if(sdinitbool){
+						card.sdprinting = false;
+						card.closefile();
+						
+						
+						if(jint == 0){
+							genie.WriteStr(STRING_NAME_FILE_DUR,buffer2);//Printing form
+						}
+						else if(jint == 1){
+							genie.WriteStr(STRING_NAME_FILE2_DUR,buffer2);//Printing form
+						}
+						else if(jint == 2){
+							genie.WriteStr(STRING_NAME_FILE3_DUR,buffer2);//Printing form
+						}
+						if(jint == 2){
+							sdinitbool = false;
+						}
+					}
+					Serial.println(buffer2);
+					Serial.println(timeduration);
+					
+					break;
 					case 79://Filament cost
 					break;
-					
+						
 					#if defined(FAN_PIN) && FAN_PIN > -1
 					case 106: //M106 Fan On
 					if (code_seen('S')){
@@ -6408,133 +6388,133 @@ void process_commands()
 					gcode_LastN = Stopped_gcode_LastN;
 					FlushSerialRequestResend();
 					break;
-				}
-			}
+					}
+					}
 
-			else if(code_seen('T'))
-			{
-				tmp_extruder = code_value();
-				if(tmp_extruder >= EXTRUDERS) {
+					else if(code_seen('T'))
+					{
+					tmp_extruder = code_value();
+					if(tmp_extruder >= EXTRUDERS) {
 					SERIAL_ECHO_START;
 					SERIAL_ECHO("T");
 					SERIAL_ECHO(tmp_extruder);
 					SERIAL_ECHOLN(MSG_INVALID_EXTRUDER);
-				}
-				else {
+					}
+					else {
 					boolean make_move = false;
 					if(code_seen('F')) {
-						make_move = true;
-						next_feedrate = code_value();
-						if(next_feedrate > 0.0) {
-							feedrate = next_feedrate;
-						}
+					make_move = true;
+					next_feedrate = code_value();
+					if(next_feedrate > 0.0) {
+					feedrate = next_feedrate;
+					}
 					}
 					#if EXTRUDERS > 1
 					
 					if(tmp_extruder != active_extruder) {
-						// Save current position to return to after applying extruder offset
-						//Rapduch toolchange
-						z_restaurada = current_position[Z_AXIS]; //Save the Z position that will be restored after changing tool
-						memcpy(destination, current_position, sizeof(destination));
-						#ifdef DUAL_X_CARRIAGE
-						if (dual_x_carriage_mode == DXC_AUTO_PARK_MODE && Stopped == false && (delayed_move_time != 0 || current_position[X_AXIS] != x_home_pos(active_extruder)))
-						{
-							// Park old head: 1) raise 2) move to park position 3) lower
-							plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT, current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
-							plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT, current_position[E_AXIS], max_feedrate[X_AXIS], active_extruder);
-							plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
-							st_synchronize();
-						}
-						
-						if (dual_x_carriage_mode == DXC_FULL_SIGMA_MODE && current_position[X_AXIS] != x_home_pos(active_extruder)) //DUAL FULL CONTROL and NOT HOMED
-						{
-							// Park old head: 1) raise 2) move to park position 3) lower
-							plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT,current_position[E_AXIS], max_feedrate[Z_AXIS]/2, active_extruder);
-							plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT,current_position[E_AXIS], XY_SIGMA_TRAVEL_SPEED, active_extruder);
-							plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS] ,current_position[E_AXIS], max_feedrate[Z_AXIS]/2, active_extruder);
-							st_synchronize();
-							//current_position[Z_AXIS]= current_position[Z_AXIS]+TOOLCHANGE_PARK_ZLIFT;
-						}
-						Serial.print("POSITION HOME: ");
-						Serial.println(x_home_pos(active_extruder));
+					// Save current position to return to after applying extruder offset
+					//Rapduch toolchange
+					z_restaurada = current_position[Z_AXIS]; //Save the Z position that will be restored after changing tool
+					memcpy(destination, current_position, sizeof(destination));
+					#ifdef DUAL_X_CARRIAGE
+					if (dual_x_carriage_mode == DXC_AUTO_PARK_MODE && Stopped == false && (delayed_move_time != 0 || current_position[X_AXIS] != x_home_pos(active_extruder)))
+					{
+					// Park old head: 1) raise 2) move to park position 3) lower
+					plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT, current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
+					plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT, current_position[E_AXIS], max_feedrate[X_AXIS], active_extruder);
+					plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], max_feedrate[Z_AXIS], active_extruder);
+					st_synchronize();
+					}
+					
+					if (dual_x_carriage_mode == DXC_FULL_SIGMA_MODE && current_position[X_AXIS] != x_home_pos(active_extruder)) //DUAL FULL CONTROL and NOT HOMED
+					{
+					// Park old head: 1) raise 2) move to park position 3) lower
+					plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT,current_position[E_AXIS], max_feedrate[Z_AXIS]/2, active_extruder);
+					plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS] + TOOLCHANGE_PARK_ZLIFT,current_position[E_AXIS], XY_SIGMA_TRAVEL_SPEED, active_extruder);
+					plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS], current_position[Z_AXIS] ,current_position[E_AXIS], max_feedrate[Z_AXIS]/2, active_extruder);
+					st_synchronize();
+					//current_position[Z_AXIS]= current_position[Z_AXIS]+TOOLCHANGE_PARK_ZLIFT;
+					}
+					Serial.print("POSITION HOME: ");
+					Serial.println(x_home_pos(active_extruder));
 
-						// apply Y & Z extruder offset (x offset is already used in determining home pos)
-						//current_position[Y_AXIS] = current_position[Y_AXIS] - extruder_offset[Y_AXIS][active_extruder] + extruder_offset[Y_AXIS][tmp_extruder];
-						//current_position[Z_AXIS] = current_position[Z_AXIS] - extruder_offset[Z_AXIS][active_extruder] + extruder_offset[Z_AXIS][tmp_extruder];
-						plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS]- extruder_offset[Y_AXIS][active_extruder] + extruder_offset[Y_AXIS][tmp_extruder], current_position[Z_AXIS] - extruder_offset[Z_AXIS][tmp_extruder] + extruder_offset[Z_AXIS][active_extruder], current_position[E_AXIS], max_feedrate[X_AXIS], active_extruder);
-						active_extruder = tmp_extruder;
+					// apply Y & Z extruder offset (x offset is already used in determining home pos)
+					//current_position[Y_AXIS] = current_position[Y_AXIS] - extruder_offset[Y_AXIS][active_extruder] + extruder_offset[Y_AXIS][tmp_extruder];
+					//current_position[Z_AXIS] = current_position[Z_AXIS] - extruder_offset[Z_AXIS][active_extruder] + extruder_offset[Z_AXIS][tmp_extruder];
+					plan_buffer_line(x_home_pos(active_extruder), current_position[Y_AXIS]- extruder_offset[Y_AXIS][active_extruder] + extruder_offset[Y_AXIS][tmp_extruder], current_position[Z_AXIS] - extruder_offset[Z_AXIS][tmp_extruder] + extruder_offset[Z_AXIS][active_extruder], current_position[E_AXIS], max_feedrate[X_AXIS], active_extruder);
+					active_extruder = tmp_extruder;
 
-						// This function resets the max/min values - the current position may be overwritten below.
-						axis_is_at_home(X_AXIS);
+					// This function resets the max/min values - the current position may be overwritten below.
+					axis_is_at_home(X_AXIS);
 
-						//Rapduch
-						if (dual_x_carriage_mode == DXC_FULL_SIGMA_MODE)
-						{
-							memcpy(raised_parked_position, current_position, sizeof(raised_parked_position));
-							active_extruder_parked = true;
-						}
-						else if (dual_x_carriage_mode == DXC_FULL_CONTROL_MODE)
-						{
-							current_position[X_AXIS] = inactive_extruder_x_pos;
-							inactive_extruder_x_pos = destination[X_AXIS];
-						}
-						else if (dual_x_carriage_mode == DXC_DUPLICATION_MODE)
-						{
-							active_extruder_parked = (active_extruder == 0); // this triggers the second extruder to move into the duplication position
-							if (active_extruder == 0 || active_extruder_parked) current_position[X_AXIS] = inactive_extruder_x_pos;
-							else current_position[X_AXIS] = destination[X_AXIS] + duplicate_extruder_x_offset;
-							inactive_extruder_x_pos = destination[X_AXIS];
-							extruder_duplication_enabled = false;
-						}
-						else
-						{
-							// record raised toolhead position for use by unpark
-							memcpy(raised_parked_position, current_position, sizeof(raised_parked_position));
-							raised_parked_position[Z_AXIS] += TOOLCHANGE_UNPARK_ZLIFT;
-							active_extruder_parked = true;
-							delayed_move_time = 0;
-						}
-						
-						#else
-						// Offset extruder (only by XY)
-						int i;
-						for(i = 0; i < 2; i++) {
-							current_position[i] = current_position[i] -	extruder_offset[i][active_extruder] + extruder_offset[i][tmp_extruder];
-						}
-						// Set the new active extruder and position
-						active_extruder = tmp_extruder;
-						#endif //else DUAL_X_CARRIAGE
+					//Rapduch
+					if (dual_x_carriage_mode == DXC_FULL_SIGMA_MODE)
+					{
+					memcpy(raised_parked_position, current_position, sizeof(raised_parked_position));
+					active_extruder_parked = true;
+					}
+					else if (dual_x_carriage_mode == DXC_FULL_CONTROL_MODE)
+					{
+					current_position[X_AXIS] = inactive_extruder_x_pos;
+					inactive_extruder_x_pos = destination[X_AXIS];
+					}
+					else if (dual_x_carriage_mode == DXC_DUPLICATION_MODE)
+					{
+					active_extruder_parked = (active_extruder == 0); // this triggers the second extruder to move into the duplication position
+					if (active_extruder == 0 || active_extruder_parked) current_position[X_AXIS] = inactive_extruder_x_pos;
+					else current_position[X_AXIS] = destination[X_AXIS] + duplicate_extruder_x_offset;
+					inactive_extruder_x_pos = destination[X_AXIS];
+					extruder_duplication_enabled = false;
+					}
+					else
+					{
+					// record raised toolhead position for use by unpark
+					memcpy(raised_parked_position, current_position, sizeof(raised_parked_position));
+					raised_parked_position[Z_AXIS] += TOOLCHANGE_UNPARK_ZLIFT;
+					active_extruder_parked = true;
+					delayed_move_time = 0;
+					}
+					
+					#else
+					// Offset extruder (only by XY)
+					int i;
+					for(i = 0; i < 2; i++) {
+					current_position[i] = current_position[i] -	extruder_offset[i][active_extruder] + extruder_offset[i][tmp_extruder];
+					}
+					// Set the new active extruder and position
+					active_extruder = tmp_extruder;
+					#endif //else DUAL_X_CARRIAGE
 
-						plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
-						//Rapduch purge
-						//Maybe we could purge here
-						//Purge line
-						//current_position[E_AXIS]+=10;
-						//plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], (current_position[E_AXIS]),600/60,active_extruder);
-						
-						
-						// Move to the old position if 'F' was in the parameters
-						if(make_move && Stopped == false) {
-							prepare_move();
-						}
+					plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+					//Rapduch purge
+					//Maybe we could purge here
+					//Purge line
+					//current_position[E_AXIS]+=10;
+					//plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], (current_position[E_AXIS]),600/60,active_extruder);
+					
+					
+					// Move to the old position if 'F' was in the parameters
+					if(make_move && Stopped == false) {
+					prepare_move();
+					}
 					}
 					#endif
 					SERIAL_ECHO_START;
 					SERIAL_ECHO(MSG_ACTIVE_EXTRUDER);
 					SERIAL_PROTOCOLLN((int)active_extruder);
-				}
-			}
-
-			else
-			{
-				SERIAL_ECHO_START;
-				SERIAL_ECHOPGM(MSG_UNKNOWN_COMMAND);
-				SERIAL_ECHO(cmdbuffer[bufindr]);
-				SERIAL_ECHOLNPGM("\"");
-			}
 					}
-			ClearToSend();
-		}
+					}
+
+					else
+					{
+					SERIAL_ECHO_START;
+					SERIAL_ECHOPGM(MSG_UNKNOWN_COMMAND);
+					SERIAL_ECHO(cmdbuffer[bufindr]);
+					SERIAL_ECHOLNPGM("\"");
+					}
+
+					ClearToSend();
+					}
 
 
 					//Rapduch: Better hardcoded toolChange
