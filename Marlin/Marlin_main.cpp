@@ -887,6 +887,195 @@ int getBuflen ()
 {
 	return buflen;
 }
+void inidsd_screen(){
+	//wake_RELAY();
+		int days=0, minutes=0, hours=0;
+		char *strchr_pointer1;
+char comandline[99];
+		Serial.println("Form 2!");
+		////Check sdcardFiles
+		filepointer = 0;
+		int vecto = 0;
+		int jint;
+		card.initsd();
+		if (card.cardOK){
+			
+			uint16_t fileCnt = card.getnrfilenames();
+			//Declare filepointer
+			card.getWorkDirName();
+			//Text index starts at 0
+			//card.getfilename(filepointer);
+			//Serial.println(card.longFilename);
+			if (card.filenameIsDir)
+			{
+				//Is a folder
+				//genie.WriteStr(1,card.longFilename);
+				//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,1);
+				}else{
+				
+				for(jint = -1; jint <  2; jint++){
+					days=0, minutes=0, hours=0;
+					int line = 23;
+					int count = 63;
+					char buffer[count+3];
+					char buffer7[256];
+					int x = 0;
+					memset( buffer, '\0', sizeof(char)*count );
+					vecto = filepointer;
+					
+					if((jint + vecto) < 0){
+						vecto = fileCnt - 1;
+					}
+					else if((jint + vecto) > (fileCnt -1)){
+						vecto = 0;
+					}
+					else{
+						vecto += jint;
+					}
+					
+					card.getfilename(vecto);
+					//card.file.open()
+					///CODE READING MCODE 78 START
+					card.openFile(card.filename, true);
+					
+					char serial_char='\0';
+					//comandline="";
+					int posi = 0;
+					
+					while(serial_char != '\n' && posi < 50){
+						
+						
+						int16_t n=card.get();
+						serial_char = (char)n;
+						comandline[posi]=serial_char;
+						
+						
+						posi++;
+					}
+					
+					strchr_pointer1 = strchr(comandline, 'M');
+					if(strchr_pointer1 != NULL){
+						
+						if (78 ==(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL)){
+							strchr_pointer1 = strchr(comandline, 'D');
+							if(strchr_pointer1 != NULL){
+								days =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+							}
+							else{
+								Serial.println("NO DAYS");
+							}
+							strchr_pointer1 = strchr(comandline, 'H');
+							if(strchr_pointer1 != NULL){
+								hours =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+							}
+							else{
+								Serial.println("NO HOURS");
+							}
+							strchr_pointer1 = strchr(comandline, 'M');
+							if(strchr_pointer1 != NULL){
+								minutes =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+							}
+							else{
+								Serial.println("NO MINUTES");
+							}
+							
+						}
+						else{
+							Serial.println("NO COMMAND M78");
+						}
+						
+					}
+					else{
+						Serial.println("NO MCODE");
+					}
+					
+					/*Serial.println(days);
+					Serial.println(hours);
+					Serial.println(minutes);*/
+					card.closefile();
+					
+					sprintf(buffer7, "%d d %d h %d m", days, hours, minutes);
+					
+					//Serial.println(comandline);
+					///CODE READING MCODE 78 END
+					
+					
+					if (String(card.longFilename).length() > count){
+						for (int i = 0; i<count ; i++)
+						{
+							if (card.longFilename[i] == '.') i = count +10; //go out of the for
+							else if(i == 0) buffer[i]=card.longFilename[x];
+							else if (i%line == 0){
+								buffer[i] = '\n';
+								i++;
+								buffer[i]=card.longFilename[x];
+							}
+							else {
+								buffer[i]=card.longFilename[x];
+							}
+							x++;
+							Serial.print(i);
+						}
+						buffer[count]='\0';
+						char* buffer2 = strcat(buffer,"...\0");
+						if(jint == -1){
+							genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
+						}
+						else if(jint == 0){
+							genie.WriteStr(STRING_NAME_FILE2,buffer2);//Printing form
+						}
+						else if(jint == 1){
+							genie.WriteStr(STRING_NAME_FILE3,buffer2);//Printing form
+						}
+					}
+					else {
+						for (int i = 0; i<String(card.longFilename).length(); i++)	{
+							if (card.longFilename[i] == '.') i = String(card.longFilename).length() +10; //go out of the for
+							else if(i == 0) buffer[i]=card.longFilename[x];
+							else if (i%line == 0){
+								buffer[i] = '\n';
+								i++;
+								buffer[i]=card.longFilename[x];
+							}
+							else {
+								buffer[i]=card.longFilename[x];
+							}
+							x++;
+							Serial.print(i);
+						}
+						//buffer[count]='\0';
+						if(jint == -1){
+							genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
+							genie.WriteStr(STRING_NAME_FILE_DUR,buffer7);//Printing form
+							
+						}
+						else if(jint == 0){
+							genie.WriteStr(STRING_NAME_FILE2,buffer);//Printing form
+							genie.WriteStr(STRING_NAME_FILE2_DUR,buffer7);//Printing form
+						}
+						else if(jint == 1){
+							genie.WriteStr(STRING_NAME_FILE3,buffer);//Printing form
+							genie.WriteStr(STRING_NAME_FILE3_DUR,buffer7);//Printing form
+						}
+						
+						
+						
+						//Is a file
+						//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
+					}
+					Serial.println(buffer);
+					
+				}
+				
+			}
+		}
+		else{
+			genie.WriteStr(STRING_NAME_FILE,"                  Insert SD Card");//Printing form
+			screen_sdcard = true;
+		}
+		surf_file_menu = true;
+		initsd_flag = false;
+}
 
 
 #ifdef SIGMA_TOUCH_SCREEN
@@ -976,6 +1165,10 @@ void touchscreen_update() //Updates the Serial Communications with the screen
 		}
 		
 		
+	}
+	if(initsd_flag){
+		
+		inidsd_screen();
 	}
 	
 	
