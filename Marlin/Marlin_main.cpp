@@ -887,25 +887,335 @@ int getBuflen ()
 {
 	return buflen;
 }
-void inidsd_screen(){
+inline void inidsd_screen(){
 	//wake_RELAY();
-		int days=0, minutes=0, hours=0;
-		char *strchr_pointer1;
-char comandline[99];
-		Serial.println("Form 2!");
-		////Check sdcardFiles
-		filepointer = 0;
-		int vecto = 0;
-		int jint;
-		card.initsd();
-		if (card.cardOK){
+	int days=0, minutes=0, hours=0;
+	char *strchr_pointer1;
+	char comandline[99];
+	Serial.println("Form 2!");
+	////Check sdcardFiles
+	filepointer = 0;
+	int vecto = 0;
+	int jint;
+	card.initsd();
+	if (card.cardOK){
+		
+		uint16_t fileCnt = card.getnrfilenames();
+		//Declare filepointer
+		card.getWorkDirName();
+		//Text index starts at 0
+		//card.getfilename(filepointer);
+		//Serial.println(card.longFilename);
+		if (card.filenameIsDir)
+		{
+			//Is a folder
+			//genie.WriteStr(1,card.longFilename);
+			//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,1);
+			}else{
 			
+			for(jint = -1; jint <  2; jint++){
+				days=0, minutes=0, hours=0;
+				int line = 23;
+				int count = 63;
+				char buffer[count+3];
+				char buffer7[256];
+				int x = 0;
+				memset( buffer, '\0', sizeof(char)*count );
+				vecto = filepointer;
+				
+				if((jint + vecto) < 0){
+					vecto = fileCnt - 1;
+				}
+				else if((jint + vecto) > (fileCnt -1)){
+					vecto = 0;
+				}
+				else{
+					vecto += jint;
+				}
+				
+				card.getfilename(vecto);
+				//card.file.open()
+				///CODE READING MCODE 78 START
+				card.openFile(card.filename, true);
+				
+				char serial_char='\0';
+				//comandline="";
+				int posi = 0;
+				
+				while(serial_char != '\n' && posi < 50){
+					
+					
+					int16_t n=card.get();
+					serial_char = (char)n;
+					comandline[posi]=serial_char;
+					
+					
+					posi++;
+				}
+				
+				strchr_pointer1 = strchr(comandline, 'M');
+				if(strchr_pointer1 != NULL){
+					
+					if (78 ==(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL)){
+						strchr_pointer1 = strchr(comandline, 'D');
+						if(strchr_pointer1 != NULL){
+							days =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+						}
+						else{
+							Serial.println("NO DAYS");
+						}
+						strchr_pointer1 = strchr(comandline, 'H');
+						if(strchr_pointer1 != NULL){
+							hours =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+						}
+						else{
+							Serial.println("NO HOURS");
+						}
+						strchr_pointer1 = strchr(comandline, 'M');
+						if(strchr_pointer1 != NULL){
+							minutes =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+						}
+						else{
+							Serial.println("NO MINUTES");
+						}
+						
+					}
+					else{
+						Serial.println("NO COMMAND M78");
+					}
+					
+				}
+				else{
+					Serial.println("NO MCODE");
+				}
+				
+				/*Serial.println(days);
+				Serial.println(hours);
+				Serial.println(minutes);*/
+				card.closefile();
+				
+				sprintf(buffer7, "%d d %d h %d m", days, hours, minutes);
+				
+				//Serial.println(comandline);
+				///CODE READING MCODE 78 END
+				
+				
+				if (String(card.longFilename).length() > count){
+					for (int i = 0; i<count ; i++)
+					{
+						if (card.longFilename[i] == '.') i = count +10; //go out of the for
+						else if(i == 0) buffer[i]=card.longFilename[x];
+						else if (i%line == 0){
+							buffer[i] = '\n';
+							i++;
+							buffer[i]=card.longFilename[x];
+						}
+						else {
+							buffer[i]=card.longFilename[x];
+						}
+						x++;
+						Serial.print(i);
+					}
+					buffer[count]='\0';
+					char* buffer2 = strcat(buffer,"...\0");
+					if(jint == -1){
+						genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
+					}
+					else if(jint == 0){
+						genie.WriteStr(STRING_NAME_FILE2,buffer2);//Printing form
+					}
+					else if(jint == 1){
+						genie.WriteStr(STRING_NAME_FILE3,buffer2);//Printing form
+					}
+				}
+				else {
+					for (int i = 0; i<String(card.longFilename).length(); i++)	{
+						if (card.longFilename[i] == '.') i = String(card.longFilename).length() +10; //go out of the for
+						else if(i == 0) buffer[i]=card.longFilename[x];
+						else if (i%line == 0){
+							buffer[i] = '\n';
+							i++;
+							buffer[i]=card.longFilename[x];
+						}
+						else {
+							buffer[i]=card.longFilename[x];
+						}
+						x++;
+						Serial.print(i);
+					}
+					//buffer[count]='\0';
+					if(jint == -1){
+						genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
+						genie.WriteStr(STRING_NAME_FILE_DUR,buffer7);//Printing form
+						
+					}
+					else if(jint == 0){
+						genie.WriteStr(STRING_NAME_FILE2,buffer);//Printing form
+						genie.WriteStr(STRING_NAME_FILE2_DUR,buffer7);//Printing form
+					}
+					else if(jint == 1){
+						genie.WriteStr(STRING_NAME_FILE3,buffer);//Printing form
+						genie.WriteStr(STRING_NAME_FILE3_DUR,buffer7);//Printing form
+					}
+					
+					
+					
+					//Is a file
+					//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
+				}
+				Serial.println(buffer);
+				
+			}
+			
+		}
+	}
+	else{
+		genie.WriteStr(STRING_NAME_FILE,"                  Insert SD Card");//Printing form
+		screen_sdcard = true;
+	}
+	surf_file_menu = true;
+	initsd_flag = false;
+}
+inline void p_setting_refresh(){
+	
+	char buffer[256];
+	SERIAL_PROTOCOLPGM("PRINT SETTINGS \n");
+	//char buffer[256];
+	genie.WriteObject(GENIE_OBJ_FORM,FORM_PRINTTING_SETTINGS_DEF,0);
+	
+	
+	sprintf(buffer, "%3d %cC",target_temperature[0],0x00B0);
+	//Serial.println(buffer);
+	genie.WriteStr(STRING_PS_LEFT_TEMP,buffer);
+	
+	sprintf(buffer, "%3d %cC",target_temperature[1],0x00B0);
+	//Serial.println(buffer);
+	genie.WriteStr(STRING_PS_RIGHT_TEMP,buffer);
+	
+	sprintf(buffer, "%3d %cC",target_temperature_bed,0x00B0);
+	//Serial.println(buffer);
+	genie.WriteStr(STRING_PS_BED_TEMP,buffer);
+	
+	sprintf(buffer, "%3d %%",feedmultiply);
+	//Serial.println(buffer);
+	genie.WriteStr(STRING_PS_SPEED,buffer);
+	
+	print_setting_refresh = false;
+}
+inline void check_settings_changes(){
+	int value = 5;
+	if(screen_change_nozz1up){
+		char buffer[256];
+		
+		if (target_temperature[0] < HEATER_0_MAXTEMP)
+		{
+			target_temperature[0]+=value;
+			sprintf(buffer, "%3d %cC",target_temperature[0],0x00B0);
+			genie.WriteStr(STRING_PS_LEFT_TEMP,buffer);
+			
+		}
+		
+		screen_change_nozz1up = false;
+	}
+	if(screen_change_nozz2up){
+		char buffer[256];
+		if (target_temperature[1]<HEATER_1_MAXTEMP)
+		{
+			target_temperature[1]+=value;
+			sprintf(buffer, "%3d %cC",target_temperature[1],0x00B0);
+			genie.WriteStr(STRING_PS_RIGHT_TEMP,buffer);
+			
+		}
+		
+		screen_change_nozz2up = false;
+	}
+	if(screen_change_bedup){
+		char buffer[256];
+		if (target_temperature_bed < BED_MAXTEMP)//MaxTemp
+		{
+			target_temperature_bed+=value;
+			sprintf(buffer, "%3d %cC",target_temperature_bed,0x00B0);
+			genie.WriteStr(STRING_PS_BED_TEMP,buffer);
+			
+		}
+		
+		screen_change_bedup = false;
+	}
+	if(screen_change_speedup){
+		char buffer[256];
+		if (feedmultiply<200)
+		{
+			feedmultiply+=value;
+			sprintf(buffer, "%3d %%",feedmultiply);
+			genie.WriteStr(STRING_PS_SPEED,buffer);
+			
+		}
+		screen_change_speedup = false;
+	}
+	
+	if(screen_change_nozz1down){
+		char buffer[256];
+		if (target_temperature[0] > HEATER_0_MINTEMP)
+		{
+			target_temperature[0]-=value;
+			sprintf(buffer, "%3d %cC",target_temperature[0],0x00B0);
+			genie.WriteStr(STRING_PS_LEFT_TEMP,buffer);
+			
+		}
+		
+		screen_change_nozz1down = false;
+	}
+	if(screen_change_nozz2down){
+		char buffer[256];
+		if (target_temperature[1]>HEATER_1_MINTEMP)
+		{
+			target_temperature[1]-=value;
+			sprintf(buffer, "%3d %cC",target_temperature[1],0x00B0);
+			genie.WriteStr(STRING_PS_RIGHT_TEMP,buffer);
+			
+		}
+		
+		screen_change_nozz2down = false;
+	}
+	if(screen_change_beddown){
+		char buffer[256];
+		if (target_temperature_bed> BED_MINTEMP)//Mintemp
+		{
+			target_temperature_bed-=value;
+			sprintf(buffer, "%3d %cC",target_temperature_bed,0x00B0);
+			genie.WriteStr(STRING_PS_BED_TEMP,buffer);
+			
+		}
+		
+		screen_change_beddown = false;
+	}
+	if(screen_change_speeddown){
+		char buffer[256];
+		if (feedmultiply>50)
+		{
+			feedmultiply-=value;
+			sprintf(buffer, "%3d %%",feedmultiply);
+			genie.WriteStr(STRING_PS_SPEED,buffer);
+			
+		}
+		
+		screen_change_speeddown = false;
+	}
+}
+inline void retry_SDcard_init(){
+	static uint32_t waitPeriod = millis();
+	if (millis() >= waitPeriod){
+		
+		filepointer = 0;
+		card.initsd();
+		if(card.cardOK){
+			screen_sdcard = false;
 			uint16_t fileCnt = card.getnrfilenames();
 			//Declare filepointer
 			card.getWorkDirName();
 			//Text index starts at 0
-			//card.getfilename(filepointer);
-			//Serial.println(card.longFilename);
+			card.getfilename(filepointer);
+			Serial.println(card.longFilename);
 			if (card.filenameIsDir)
 			{
 				//Is a folder
@@ -913,168 +1223,58 @@ char comandline[99];
 				//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,1);
 				}else{
 				
-				for(jint = -1; jint <  2; jint++){
-					days=0, minutes=0, hours=0;
-					int line = 23;
-					int count = 63;
-					char buffer[count+3];
-					char buffer7[256];
-					int x = 0;
-					memset( buffer, '\0', sizeof(char)*count );
-					vecto = filepointer;
-					
-					if((jint + vecto) < 0){
-						vecto = fileCnt - 1;
-					}
-					else if((jint + vecto) > (fileCnt -1)){
-						vecto = 0;
-					}
-					else{
-						vecto += jint;
-					}
-					
-					card.getfilename(vecto);
-					//card.file.open()
-					///CODE READING MCODE 78 START
-					card.openFile(card.filename, true);
-					
-					char serial_char='\0';
-					//comandline="";
-					int posi = 0;
-					
-					while(serial_char != '\n' && posi < 50){
-						
-						
-						int16_t n=card.get();
-						serial_char = (char)n;
-						comandline[posi]=serial_char;
-						
-						
-						posi++;
-					}
-					
-					strchr_pointer1 = strchr(comandline, 'M');
-					if(strchr_pointer1 != NULL){
-						
-						if (78 ==(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL)){
-							strchr_pointer1 = strchr(comandline, 'D');
-							if(strchr_pointer1 != NULL){
-								days =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
-							}
-							else{
-								Serial.println("NO DAYS");
-							}
-							strchr_pointer1 = strchr(comandline, 'H');
-							if(strchr_pointer1 != NULL){
-								hours =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
-							}
-							else{
-								Serial.println("NO HOURS");
-							}
-							strchr_pointer1 = strchr(comandline, 'M');
-							if(strchr_pointer1 != NULL){
-								minutes =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
-							}
-							else{
-								Serial.println("NO MINUTES");
-							}
-							
-						}
-						else{
-							Serial.println("NO COMMAND M78");
-						}
-						
-					}
-					else{
-						Serial.println("NO MCODE");
-					}
-					
-					/*Serial.println(days);
-					Serial.println(hours);
-					Serial.println(minutes);*/
-					card.closefile();
-					
-					sprintf(buffer7, "%d d %d h %d m", days, hours, minutes);
-					
-					//Serial.println(comandline);
-					///CODE READING MCODE 78 END
-					
-					
-					if (String(card.longFilename).length() > count){
-						for (int i = 0; i<count ; i++)
-						{
-							if (card.longFilename[i] == '.') i = count +10; //go out of the for
-							else if(i == 0) buffer[i]=card.longFilename[x];
-							else if (i%line == 0){
-								buffer[i] = '\n';
-								i++;
-								buffer[i]=card.longFilename[x];
-							}
-							else {
-								buffer[i]=card.longFilename[x];
-							}
-							x++;
-							Serial.print(i);
-						}
-						buffer[count]='\0';
-						char* buffer2 = strcat(buffer,"...\0");
-						if(jint == -1){
-							genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
-						}
-						else if(jint == 0){
-							genie.WriteStr(STRING_NAME_FILE2,buffer2);//Printing form
-						}
-						else if(jint == 1){
-							genie.WriteStr(STRING_NAME_FILE3,buffer2);//Printing form
-						}
-					}
-					else {
-						for (int i = 0; i<String(card.longFilename).length(); i++)	{
-							if (card.longFilename[i] == '.') i = String(card.longFilename).length() +10; //go out of the for
-							else if(i == 0) buffer[i]=card.longFilename[x];
-							else if (i%line == 0){
-								buffer[i] = '\n';
-								i++;
-								buffer[i]=card.longFilename[x];
-							}
-							else {
-								buffer[i]=card.longFilename[x];
-							}
-							x++;
-							Serial.print(i);
-						}
-						//buffer[count]='\0';
-						if(jint == -1){
-							genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
-							genie.WriteStr(STRING_NAME_FILE_DUR,buffer7);//Printing form
-							
-						}
-						else if(jint == 0){
-							genie.WriteStr(STRING_NAME_FILE2,buffer);//Printing form
-							genie.WriteStr(STRING_NAME_FILE2_DUR,buffer7);//Printing form
-						}
-						else if(jint == 1){
-							genie.WriteStr(STRING_NAME_FILE3,buffer);//Printing form
-							genie.WriteStr(STRING_NAME_FILE3_DUR,buffer7);//Printing form
-						}
-						
-						
-						
-						//Is a file
-						//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
-					}
-					Serial.println(buffer);
-					
-				}
+				int line = 23;
+				int count = 63;
+				char buffer[count+3];
+				int x = 0;
+				memset( buffer, '\0', sizeof(char)*count );
 				
+				if (String(card.longFilename).length() > count){
+					for (int i = 0; i<count ; i++)
+					{
+						if (card.longFilename[i] == '.') i = count +10; //go out of the for
+						else if(i == 0) buffer[i]=card.longFilename[x];
+						else if (i%line == 0){
+							buffer[i] = '\n';
+							i++;
+							buffer[i]=card.longFilename[x];
+						}
+						else {
+							buffer[i]=card.longFilename[x];
+						}
+						x++;
+						Serial.print(i);
+					}
+					buffer[count]='\0';
+					char* buffer2 = strcat(buffer,"...\0");
+					genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
+				}
+				else {
+					for (int i = 0; i<String(card.longFilename).length(); i++)	{
+						if (card.longFilename[i] == '.') i = String(card.longFilename).length() +10; //go out of the for
+						else if(i == 0) buffer[i]=card.longFilename[x];
+						else if (i%line == 0){
+							buffer[i] = '\n';
+							i++;
+							buffer[i]=card.longFilename[x];
+						}
+						else {
+							buffer[i]=card.longFilename[x];
+						}
+						x++;
+						Serial.print(i);
+					}
+					//buffer[count]='\0';
+					genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
+					//Is a file
+					//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
+				}
+				Serial.println(buffer);
 			}
 		}
-		else{
-			genie.WriteStr(STRING_NAME_FILE,"                  Insert SD Card");//Printing form
-			screen_sdcard = true;
-		}
-		surf_file_menu = true;
-		initsd_flag = false;
+		
+		waitPeriod = 750 + millis();
+	}
 }
 
 
@@ -1087,82 +1287,12 @@ void touchscreen_update() //Updates the Serial Communications with the screen
 	static uint32_t waitPeriod_p = millis();
 	static uint32_t waitPeriod_pbackhome = millis(); //Processing back home
 	static int count5s = 0;
-	int value = 5;
+
 	//if(card.sdprinting && is_on_printing_screen)
 	
 	if(screen_sdcard && !card.cardOK){
 		
-		if (millis() >= waitPeriod){
-			
-			filepointer = 0;
-			card.initsd();
-			if(card.cardOK){
-				screen_sdcard = false;
-				uint16_t fileCnt = card.getnrfilenames();
-				//Declare filepointer
-				card.getWorkDirName();
-				//Text index starts at 0
-				card.getfilename(filepointer);
-				Serial.println(card.longFilename);
-				if (card.filenameIsDir)
-				{
-					//Is a folder
-					//genie.WriteStr(1,card.longFilename);
-					//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,1);
-					}else{
-					
-					int line = 23;
-					int count = 63;
-					char buffer[count+3];
-					int x = 0;
-					memset( buffer, '\0', sizeof(char)*count );
-					
-					if (String(card.longFilename).length() > count){
-						for (int i = 0; i<count ; i++)
-						{
-							if (card.longFilename[i] == '.') i = count +10; //go out of the for
-							else if(i == 0) buffer[i]=card.longFilename[x];
-							else if (i%line == 0){
-								buffer[i] = '\n';
-								i++;
-								buffer[i]=card.longFilename[x];
-							}
-							else {
-								buffer[i]=card.longFilename[x];
-							}
-							x++;
-							Serial.print(i);
-						}
-						buffer[count]='\0';
-						char* buffer2 = strcat(buffer,"...\0");
-						genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
-					}
-					else {
-						for (int i = 0; i<String(card.longFilename).length(); i++)	{
-							if (card.longFilename[i] == '.') i = String(card.longFilename).length() +10; //go out of the for
-							else if(i == 0) buffer[i]=card.longFilename[x];
-							else if (i%line == 0){
-								buffer[i] = '\n';
-								i++;
-								buffer[i]=card.longFilename[x];
-							}
-							else {
-								buffer[i]=card.longFilename[x];
-							}
-							x++;
-							Serial.print(i);
-						}
-						//buffer[count]='\0';
-						genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
-						//Is a file
-						//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
-					}
-					Serial.println(buffer);
-				}
-			}
-			
-			waitPeriod = 750 + millis();
-		}
+		retry_SDcard_init();
 		
 		
 	}
@@ -1173,134 +1303,13 @@ void touchscreen_update() //Updates the Serial Communications with the screen
 	
 	
 	if(print_setting_refresh){
-		
-		char buffer[256];
-		SERIAL_PROTOCOLPGM("PRINT SETTINGS \n");
-		//char buffer[256];
-		genie.WriteObject(GENIE_OBJ_FORM,FORM_PRINTTING_SETTINGS_DEF,0);
-		
-		
-		sprintf(buffer, "%3d %cC",target_temperature[0],0x00B0);
-		//Serial.println(buffer);
-		genie.WriteStr(STRING_PS_LEFT_TEMP,buffer);
-		
-		sprintf(buffer, "%3d %cC",target_temperature[1],0x00B0);
-		//Serial.println(buffer);
-		genie.WriteStr(STRING_PS_RIGHT_TEMP,buffer);
-		
-		sprintf(buffer, "%3d %cC",target_temperature_bed,0x00B0);
-		//Serial.println(buffer);
-		genie.WriteStr(STRING_PS_BED_TEMP,buffer);
-		
-		sprintf(buffer, "%3d %%",feedmultiply);
-		//Serial.println(buffer);
-		genie.WriteStr(STRING_PS_SPEED,buffer);
-		
-		
+		p_setting_refresh();
 		waitPeriod=5000+millis();	//Every 5s
-		
-		print_setting_refresh = false;
 	}
 	
 	if(card.sdprinting && !card.sdispaused || !card.sdprinting && card.sdispaused )
 	{
-		if(screen_change_nozz1up){
-			char buffer[256];
-			
-			if (target_temperature[0] < HEATER_0_MAXTEMP)
-			{
-				target_temperature[0]+=value;
-				sprintf(buffer, "%3d %cC",target_temperature[0],0x00B0);
-				genie.WriteStr(STRING_PS_LEFT_TEMP,buffer);
-				
-			}
-			
-			screen_change_nozz1up = false;
-		}
-		if(screen_change_nozz2up){
-			char buffer[256];
-			if (target_temperature[1]<HEATER_1_MAXTEMP)
-			{
-				target_temperature[1]+=value;
-				sprintf(buffer, "%3d %cC",target_temperature[1],0x00B0);
-				genie.WriteStr(STRING_PS_RIGHT_TEMP,buffer);
-				
-			}
-			
-			screen_change_nozz2up = false;
-		}
-		if(screen_change_bedup){
-			char buffer[256];
-			if (target_temperature_bed < BED_MAXTEMP)//MaxTemp
-			{
-				target_temperature_bed+=value;
-				sprintf(buffer, "%3d %cC",target_temperature_bed,0x00B0);
-				genie.WriteStr(STRING_PS_BED_TEMP,buffer);
-				
-			}
-			
-			screen_change_bedup = false;
-		}
-		if(screen_change_speedup){
-			char buffer[256];
-			if (feedmultiply<200)
-			{
-				feedmultiply+=value;
-				sprintf(buffer, "%3d %%",feedmultiply);
-				genie.WriteStr(STRING_PS_SPEED,buffer);
-				
-			}
-			screen_change_speedup = false;
-		}
-		
-		if(screen_change_nozz1down){
-			char buffer[256];
-			if (target_temperature[0] > HEATER_0_MINTEMP)
-			{
-				target_temperature[0]-=value;
-				sprintf(buffer, "%3d %cC",target_temperature[0],0x00B0);
-				genie.WriteStr(STRING_PS_LEFT_TEMP,buffer);
-				
-			}
-			
-			screen_change_nozz1down = false;
-		}
-		if(screen_change_nozz2down){
-			char buffer[256];
-			if (target_temperature[1]>HEATER_1_MINTEMP)
-			{
-				target_temperature[1]-=value;
-				sprintf(buffer, "%3d %cC",target_temperature[1],0x00B0);
-				genie.WriteStr(STRING_PS_RIGHT_TEMP,buffer);
-				
-			}
-			
-			screen_change_nozz2down = false;
-		}
-		if(screen_change_beddown){
-			char buffer[256];
-			if (target_temperature_bed> BED_MINTEMP)//Mintemp
-			{
-				target_temperature_bed-=value;
-				sprintf(buffer, "%3d %cC",target_temperature_bed,0x00B0);
-				genie.WriteStr(STRING_PS_BED_TEMP,buffer);
-				
-			}
-			
-			screen_change_beddown = false;
-		}
-		if(screen_change_speeddown){
-			char buffer[256];
-			if (feedmultiply>50)
-			{
-				feedmultiply-=value;
-				sprintf(buffer, "%3d %%",feedmultiply);
-				genie.WriteStr(STRING_PS_SPEED,buffer);
-				
-			}
-			
-			screen_change_speeddown = false;
-		}
+		check_settings_changes();
 		if(print_print_pause){
 			////I believe it is a really unsafe way to do it
 			////plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS]+20, current_position[E_AXIS], homing_feedrate[Z_AXIS]/60, RIGHT_EXTRUDER);
