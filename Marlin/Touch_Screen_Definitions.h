@@ -21,6 +21,7 @@
 
 #define FORM_SDFILES								2
 	#define STRING_NAME_FILE				1
+	#define STRING_NAME_FILE_DUR			7
 	#define BUTTON_SD_SELECTED				15
 	#define BUTTON_SD_LEFT					14
 	#define BUTTON_SD_RIGHT					5	

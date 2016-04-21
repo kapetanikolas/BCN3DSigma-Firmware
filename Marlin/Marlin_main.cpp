@@ -4700,7 +4700,8 @@ void process_commands()
 					}
 					#endif		// Z_PROBE_REPEATABILITY_TEST
 					#endif		// ENABLE_AUTO_BED_LEVELING
-
+					case 78:
+					break;
 					case 104: // M104
 					if(setTargetedHotend(104)){
 					break;

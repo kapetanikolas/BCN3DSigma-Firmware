@@ -448,11 +448,73 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
 						}
 						Serial.println(card.longFilename);
+						int days=0, minutes=0, hours=0;
+						char *strchr_pointer1;
+						char comandline[99];
+						char buffer7[256];
 						int line = 23;
 						int count = 63;
 						char buffer[count+3];
 						int x = 0;
 						memset( buffer, '\0', sizeof(char)*count );
+						
+						card.openFile(card.filename, true);
+						
+						char serial_char='\0';
+						//comandline="";
+						int posi = 0;
+						
+						while(serial_char != '\n' && posi < 50){
+							
+							
+							int16_t n=card.get();
+							serial_char = (char)n;
+							comandline[posi]=serial_char;
+							
+							
+							posi++;
+						}
+						
+						strchr_pointer1 = strchr(comandline, 'M');
+						if(strchr_pointer1 != NULL){
+							
+							if (78 ==(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL)){
+								strchr_pointer1 = strchr(comandline, 'D');
+								if(strchr_pointer1 != NULL){
+									days =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+								}
+								else{
+									Serial.println("NO DAYS");
+								}
+								strchr_pointer1 = strchr(comandline, 'H');
+								if(strchr_pointer1 != NULL){
+									hours =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+								}
+								else{
+									Serial.println("NO HOURS");
+								}
+								strchr_pointer1 = strchr(comandline, 'M');
+								if(strchr_pointer1 != NULL){
+									minutes =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+								}
+								else{
+									Serial.println("NO MINUTES");
+								}
+								
+							}
+							else{
+								Serial.println("NO COMMAND M78");
+							}
+							
+						}
+						else{
+							Serial.println("NO MCODE");
+						}
+						
+						card.closefile();
+						sprintf(buffer7, "%d d %d h %d m", days, hours, minutes);
+						
+						
 						
 						if (String(card.longFilename).length() > count){
 							for (int i = 0; i<count ; i++)
@@ -473,6 +535,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							buffer[count]='\0';
 							char* buffer2 = strcat(buffer,"...\0");
 							genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
+							genie.WriteStr(STRING_NAME_FILE_DUR,buffer7);//Printing form
 						}
 						else {
 							for (int i = 0; i<=String(card.longFilename).length() ; i++)	{
@@ -491,6 +554,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							}
 							buffer[count]='\0';
 							genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
+							genie.WriteStr(STRING_NAME_FILE_DUR,buffer7);//Printing form
 							//Is a file
 							//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
 							
@@ -2768,12 +2832,71 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							//genie.WriteStr(1,card.longFilename);
 							//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,1);
 							}else{
-							
+							int days=0, minutes=0, hours=0;
+							char *strchr_pointer1;
+							char comandline[99];
+							char buffer7[256];
 							int line = 23;
 							int count = 63;
 							char buffer[count+3];
 							int x = 0;
 							memset( buffer, '\0', sizeof(char)*count );
+							
+							card.openFile(card.filename, true);
+							
+							char serial_char='\0';
+							//comandline="";
+							int posi = 0;
+							
+							while(serial_char != '\n' && posi < 50){
+								
+								
+								int16_t n=card.get();
+								serial_char = (char)n;
+								comandline[posi]=serial_char;
+								
+								
+								posi++;
+							}
+							
+							strchr_pointer1 = strchr(comandline, 'M');
+							if(strchr_pointer1 != NULL){
+								
+								if (78 ==(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL)){
+									strchr_pointer1 = strchr(comandline, 'D');
+									if(strchr_pointer1 != NULL){
+										days =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+									}
+									else{
+										Serial.println("NO DAYS");
+									}
+									strchr_pointer1 = strchr(comandline, 'H');
+									if(strchr_pointer1 != NULL){
+										hours =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+									}
+									else{
+										Serial.println("NO HOURS");
+									}
+									strchr_pointer1 = strchr(comandline, 'M');
+									if(strchr_pointer1 != NULL){
+										minutes =(int)strtod(&comandline[strchr_pointer1 - comandline + 1], NULL);
+									}
+									else{
+										Serial.println("NO MINUTES");
+									}
+									
+								}
+								else{
+									Serial.println("NO COMMAND M78");
+								}
+								
+							}
+							else{
+								Serial.println("NO MCODE");
+							}
+							
+							card.closefile();
+							sprintf(buffer7, "%d d %d h %d m", days, hours, minutes);
 							
 							if (String(card.longFilename).length() > count){
 								for (int i = 0; i<count ; i++)
@@ -2794,6 +2917,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 								buffer[count]='\0';
 								char* buffer2 = strcat(buffer,"...\0");
 								genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
+								genie.WriteStr(STRING_NAME_FILE_DUR,buffer7);//Printing form
 							}
 							else {
 								for (int i = 0; i<String(card.longFilename).length(); i++)	{
@@ -2812,6 +2936,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 								}
 								//buffer[count]='\0';
 								genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
+								genie.WriteStr(STRING_NAME_FILE_DUR,buffer7);//Printing form
 								//Is a file
 								//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
 							}
@@ -2820,6 +2945,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 					}
 					else{
 						genie.WriteStr(STRING_NAME_FILE,"                  Insert SD Card");//Printing form
+						
 						screen_sdcard = true;
 					}
 				}
