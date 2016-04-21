@@ -1082,26 +1082,22 @@ inline void inidsd_screen(){
 }
 inline void p_setting_refresh(){
 	
-	char buffer[256];
+	char buffer[50];
 	SERIAL_PROTOCOLPGM("PRINT SETTINGS \n");
 	//char buffer[256];
 	genie.WriteObject(GENIE_OBJ_FORM,FORM_PRINTTING_SETTINGS_DEF,0);
 	
 	
 	sprintf(buffer, "%3d %cC",target_temperature[0],0x00B0);
-	//Serial.println(buffer);
 	genie.WriteStr(STRING_PS_LEFT_TEMP,buffer);
 	
-	sprintf(buffer, "%3d %cC",target_temperature[1],0x00B0);
-	//Serial.println(buffer);
-	genie.WriteStr(STRING_PS_RIGHT_TEMP,buffer);
-	
 	sprintf(buffer, "%3d %cC",target_temperature_bed,0x00B0);
-	//Serial.println(buffer);
 	genie.WriteStr(STRING_PS_BED_TEMP,buffer);
 	
+	sprintf(buffer, "%3d %cC",target_temperature[1],0x00B0);
+	genie.WriteStr(STRING_PS_RIGHT_TEMP,buffer);
+	
 	sprintf(buffer, "%3d %%",feedmultiply);
-	//Serial.println(buffer);
 	genie.WriteStr(STRING_PS_SPEED,buffer);
 	
 	print_setting_refresh = false;
@@ -5091,7 +5087,8 @@ void process_commands()
 					}
 					#endif		// Z_PROBE_REPEATABILITY_TEST
 					#endif		// ENABLE_AUTO_BED_LEVELING
-
+					case 78:
+					break;
 					case 104: // M104
 					if(setTargetedHotend(104)){
 					break;
