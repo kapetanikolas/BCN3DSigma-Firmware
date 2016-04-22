@@ -22,6 +22,7 @@ void insertmetod();
 extern bool cancel_heatup;
 void myGenieEventHandler();
 bool print_setting_refresh = false;
+bool surfing_sdfiles = false;
 bool flag_filament_home= false;
 bool filament_accept_ok = false;
 bool flag_pause = false;
@@ -415,8 +416,9 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 				}
 				
 				
-				else if (Event.reportObject.index == BUTTON_SD_LEFT || Event.reportObject.index == BUTTON_SD_RIGHT) //TODO: control if SD is out
+				else if ((Event.reportObject.index == BUTTON_SD_LEFT || Event.reportObject.index == BUTTON_SD_RIGHT) && !surfing_sdfiles) //TODO: control if SD is out
 				{
+					surfing_sdfiles = true;
 					if (card.cardOK){
 						if (Event.reportObject.index == BUTTON_SD_LEFT) //LEFT button pressed
 						{
@@ -527,6 +529,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 						Serial.print("Image n: ");
 						Serial.println(filepointer);
 					}
+					surfing_sdfiles = false;
 				}
 				#pragma endregion SD Gcode Selector
 
@@ -2776,6 +2779,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 				if (Event.reportObject.index == FORM_SDFILES)
 				{
 					//wake_RELAY();
+					surfing_sdfiles = true;
 					Serial.println("Form 2!");
 					////Check sdcardFiles
 					filepointer = 0;
@@ -2809,18 +2813,24 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							char serial_char='\0';
 							//comandline="";
 							int posi = 0;
-							
-							while(serial_char != '\n' && posi < 50){
-								
-								
-								int16_t n=card.get();
-								serial_char = (char)n;
-								comandline[posi]=serial_char;
-								
-								
-								posi++;
+							int linecomepoint=0;
+							while(linecomepoint < 3){
+								comandline=NULL;
+								while(comandline[0]!=';'){
+									serial_char='\0';
+									posi = 0;
+									while(serial_char != '\n'){
+										
+										int16_t n=card.get();
+										serial_char = (char)n;
+										comandline[posi]=serial_char;
+										
+										
+										posi++;
+									}
+								}
+								linecomepoint++;
 							}
-							
 							card.closefile();
 							
 							if (String(card.longFilename).length() > count){
@@ -2873,6 +2883,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 						
 						screen_sdcard = true;
 					}
+				surfing_sdfiles = false;	
 				}
 				else if (Event.reportObject.index == FORM_PRINTING)
 				{
