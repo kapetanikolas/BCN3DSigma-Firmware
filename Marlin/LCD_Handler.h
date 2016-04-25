@@ -449,37 +449,60 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
 						}
 						Serial.println(card.longFilename);
-						
-						char comandline[99]="";
-						char buffer7[256]="";
+						int dias=-1, horas=-1, minutos=-1;
+						char comandline[99];
+						char comandline2[13];
+						char buffer7[256];
 						int line = 23;
 						int count = 63;
 						char buffer[count+3];
 						int x = 0;
 						memset( buffer, '\0', sizeof(char)*count );
-						
+						memset( comandline, '\0', sizeof(char)*count );
 						card.openFile(card.filename, true);
 						
 						char serial_char='\0';
 						//comandline="";
 						int posi = 0;
-						
-						while(serial_char != '\n' && posi < 50){
-							
-							
-							int16_t n=card.get();
-							serial_char = (char)n;
-							comandline[posi]=serial_char;
-							
-							
-							posi++;
+						int linecomepoint=0;
+						while(linecomepoint < 3){
+							memset(comandline, '\0', sizeof(char)*count );
+							while(comandline[0]!=';'){
+								serial_char='\0';
+								posi = 0;
+								while(serial_char != '\n'){
+									
+									int16_t n=card.get();
+									serial_char = (char)n;
+									comandline[posi]=serial_char;
+									
+									
+									posi++;
+								}
+							}
+							linecomepoint++;
 						}
-						
-						
 						card.closefile();
+						sscanf( comandline, ";Print time: %d days %d hours %d minutes", &dias, &horas, &minutos);
+						if(minutos ==-1 && horas ==-1){
+							dias = 0;
+							sscanf( comandline, ";Print time: %d hours %d minutes", &horas, &minutos);
+							}
 						
-						
-						
+						if(minutos ==-1){
+							horas = 0;
+						sscanf( comandline, ";Print time: %d minutes", &minutos);
+						}
+						if(minutos ==0){
+							minutos = 1;
+						}
+						sprintf(comandline2, "%dd %dh %dm",dias, horas, minutos);
+						/*sscanf( comandline, "%d days", &dias);
+						sscanf( comandline, "%d hours", &horas);
+						sscanf( comandline, "%d minutos", &minutos);*/
+						Serial.println(dias);
+						Serial.println(horas);
+						Serial.println(minutos);
 						if (String(card.longFilename).length() > count){
 							for (int i = 0; i<count ; i++)
 							{
@@ -499,7 +522,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							buffer[count]='\0';
 							char* buffer2 = strcat(buffer,"...\0");
 							genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
-							genie.WriteStr(STRING_NAME_FILE_DUR,comandline);//Printing form
+							genie.WriteStr(STRING_NAME_FILE_DUR,comandline2);//Printing form
 						}
 						else {
 							for (int i = 0; i<=String(card.longFilename).length() ; i++)	{
@@ -518,7 +541,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							}
 							buffer[count]='\0';
 							genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
-							genie.WriteStr(STRING_NAME_FILE_DUR,comandline);//Printing form
+							genie.WriteStr(STRING_NAME_FILE_DUR,comandline2);//Printing form
 							//Is a file
 							//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
 							
@@ -2798,10 +2821,10 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							//genie.WriteStr(1,card.longFilename);
 							//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,1);
 							}else{
-							int days=0, minutes=0, hours=0;
-							
-							char comandline[99]="";
-							char buffer7[256]="";
+							int dias=-1, horas=-1, minutos=-1;
+							char comandline2[13];
+							char comandline[99];
+							char buffer7[256];
 							int line = 23;
 							int count = 63;
 							char buffer[count+3];
@@ -2815,7 +2838,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 							int posi = 0;
 							int linecomepoint=0;
 							while(linecomepoint < 3){
-								comandline=NULL;
+								memset(comandline, '\0', sizeof(char)*count );
 								while(comandline[0]!=';'){
 									serial_char='\0';
 									posi = 0;
@@ -2832,7 +2855,20 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 								linecomepoint++;
 							}
 							card.closefile();
+							sscanf( comandline, ";Print time: %d days %d hours %d minutes", &dias, &horas, &minutos);
+							if(minutos ==-1 && horas ==-1){
+								dias = 0;
+								sscanf( comandline, ";Print time: %d hours %d minutes", &horas, &minutos);
+							}
 							
+							if(minutos ==-1){
+								horas = 0;
+								sscanf( comandline, ";Print time: %d minutes", &minutos);
+							}
+							if(minutos ==0){
+								minutos = 1;
+							}
+							sprintf(comandline2, "%dd %dh %dm",dias, horas, minutos);
 							if (String(card.longFilename).length() > count){
 								for (int i = 0; i<count ; i++)
 								{
@@ -2852,7 +2888,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 								buffer[count]='\0';
 								char* buffer2 = strcat(buffer,"...\0");
 								genie.WriteStr(STRING_NAME_FILE,buffer2);//Printing form
-								genie.WriteStr(STRING_NAME_FILE_DUR,comandline);//Printing form
+								genie.WriteStr(STRING_NAME_FILE_DUR,comandline2);//Printing form
 							}
 							else {
 								for (int i = 0; i<String(card.longFilename).length(); i++)	{
@@ -2871,7 +2907,7 @@ void myGenieEventHandler(void) //Handler for the do.Events() function
 								}
 								//buffer[count]='\0';
 								genie.WriteStr(STRING_NAME_FILE,buffer);//Printing form
-								genie.WriteStr(STRING_NAME_FILE_DUR,comandline);//Printing form
+								genie.WriteStr(STRING_NAME_FILE_DUR,comandline2);//Printing form
 								//Is a file
 								//genie.WriteObject(GENIE_OBJ_USERIMAGES,0,0);
 							}
