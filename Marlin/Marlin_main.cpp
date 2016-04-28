@@ -699,7 +699,7 @@ void setup()
 			
 			
 			
-			delay(4500); //showing the splash screen
+			delay(4000); //showing the splash screen
 			
 			// loads data from EEPROM if available else uses defaults (and resets step acceleration rate)
 			//Config_RetrieveSettings();
@@ -715,7 +715,18 @@ void setup()
 				
 			} else {*/
 				
-				
+				int i =0;
+				while ( i<100){
+					if (millis() >= waitPeriod){
+						
+						genie.WriteObject(GENIE_OBJ_VIDEO,0,i);
+						i+=2;
+						waitPeriod = 20+millis();	//Every 5s
+					}
+					
+					
+					
+				}
 				
 				genie.WriteStr(STRING_VERSION,VERSION_STRING);
 				
