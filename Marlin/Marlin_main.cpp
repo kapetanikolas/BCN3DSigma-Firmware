@@ -326,7 +326,7 @@ float zprobe_zoffset;
 bool processing = false;
 bool heatting = false;
 bool back_home = false;
-char namefilegcode[64]="";
+char namefilegcode[24];
 int dateresetday;
 int dateresetmonth;
 int dateresetyear;
