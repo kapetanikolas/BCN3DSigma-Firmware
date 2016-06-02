@@ -9,12 +9,12 @@
 */
 
 #define __AVR_ATmega2560__
-#define ARDUINO 167
+#define ARDUINO 168
 #define ARDUINO_MAIN
 #define F_CPU 16000000L
 #define __AVR__
 #define F_CPU 16000000L
-#define ARDUINO 167
+#define ARDUINO 168
 #define ARDUINO_AVR_MEGA2560
 #define ARDUINO_ARCH_AVR
 extern "C" void __cxa_pure_virtual() {;}
@@ -38,6 +38,8 @@ extern "C" void __cxa_pure_virtual() {;}
 #include <..\Marlin\Marlin.h>
 #include <..\Marlin\Marlin.ino>
 #include <..\Marlin\Marlin_main.cpp>
+#include <..\Marlin\SD_ListFiles.cpp>
+#include <..\Marlin\SD_ListFiles.h>
 #include <..\Marlin\Sd2Card.cpp>
 #include <..\Marlin\Sd2Card.h>
 #include <..\Marlin\Sd2PinMap.h>
